@@ -1,0 +1,1 @@
+# couchbase-complete-snapshot
