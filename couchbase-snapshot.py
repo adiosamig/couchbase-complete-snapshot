@@ -121,6 +121,25 @@ for bucket in clusterBuckets:
         }
         checkResults.append(checkModel)
 
+
+for setting in clusterSettings:
+    if setting.get('configName')=='autofailover' and setting.get('status')==False:
+        checkModel={
+            "problemStatement": 'Auto failover configuration disabled',
+            "problemArea": 'Cluster',
+            "problemSeverity": 'Critical'
+        }
+        checkResults.append(checkModel)
+    if setting.get('configName')=='email-alerting' and setting.get('status')==False:
+        checkModel={
+            "problemStatement": 'Email alerts are disabled',
+            "problemArea": 'Cluster',
+            "problemSeverity": 'Critical'
+        }
+        checkResults.append(checkModel)
+
 dataFrameResults=pd.DataFrame(checkResults)
 print("----- Check Notes -----")
 print(tabulate(dataFrameResults, headers = 'keys', tablefmt = 'psql'))
+
+

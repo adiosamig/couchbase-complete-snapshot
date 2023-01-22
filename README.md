@@ -12,4 +12,11 @@ Couchbase complete snapshot is responsible for collecting metrics from a single 
 3. Couchbase bucket should have 1024 primary vbuckets.
 4. A couchbase bucket's resident ratio needs to be high(It depends according to your bucket size, memory size etc..)
 5. All nodes in the cluster needs to run with the same version of Couchbase.
+6. Auto failover configuration needs to be enabled.
+7. Email alerts needs to be enabled.
+
+## Supported Couchbase Version
+
+- Couchbase 7.0.5
+- Couchbase 7.1.3
 
