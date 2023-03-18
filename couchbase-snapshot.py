@@ -1,8 +1,11 @@
 import sys
 import json
-import couchbase
+import couchbase_meta
 from tabulate import tabulate
 import pandas as pd
+import debug as debugPerformance
+import logging
+import traceback
 
 def uniqueVersions(list1):
  
@@ -20,7 +23,7 @@ couchbaseServer=sys.argv[1]
 couchbaseUser=sys.argv[2]
 couchbaseSecret=sys.argv[3]
 
-couchbaseEnvironment=couchbase.couchbasePlatform(couchbaseServer,couchbaseUser,couchbaseSecret)
+couchbaseEnvironment=couchbase_meta.couchbasePlatform(couchbaseServer,couchbaseUser,couchbaseSecret)
 couchbaseEnvironment.getClusterName()
 couchbaseEnvironment.getClusterVersion()
 couchbaseEnvironment.getUsersOnCluster()
@@ -106,6 +109,13 @@ for bucket in clusterBuckets:
             "problemSeverity": 'Critical'
         }
         checkResults.append(checkModel)
+    elif bucketReplica==3:
+        checkModel={
+            "problemStatement": f''' {bucket.get('bucketName')} has 3 replica configured''',
+            "problemArea": 'Bucket',
+            "problemSeverity": 'Warming'
+        }
+        checkResults.append(checkModel)
     if vbucketCount%1024!=0:
         checkModel={
             "problemStatement": f''' {bucket.get('bucketName')} has missing primary vbucket''',
@@ -141,5 +151,18 @@ for setting in clusterSettings:
 dataFrameResults=pd.DataFrame(checkResults)
 print("----- Check Notes -----")
 print(tabulate(dataFrameResults, headers = 'keys', tablefmt = 'psql'))
+
+print("----- Ping Test Results -----")
+debugPerformance.getPingResults(couchbaseServer,couchbaseUser,couchbaseSecret)
+
+print("----- Wait Cluster Test Results -----")
+logging.basicConfig(filename='example.log',
+                    filemode='w', 
+                    level=logging.DEBUG,
+                    format='%(levelname)s::%(asctime)s.%(msecs)03d::%(message)s',
+                    datefmt='%Y-%m-%d,%H:%M:%S')
+logger = logging.getLogger()
+
+debugPerformance.waitCluster(couchbaseServer,couchbaseUser,couchbaseSecret,logger)
 
 
