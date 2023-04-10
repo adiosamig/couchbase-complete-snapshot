@@ -45,6 +45,8 @@ dataFrameforRoles=pd.DataFrame(couchbaseEnvironment.usersOnCluster)
 dataFrameforXdcr=pd.DataFrame(couchbaseEnvironment.xdcrConnections)
 dataFrameFailover=pd.DataFrame(clusterSettings)
 
+# if xdcr exists then check version and compare with the existing cluster.
+
 
 print("----- Cluster Nodes -----")
 print(tabulate(dataFrameforNodes, headers = 'keys', tablefmt = 'psql'))
@@ -62,6 +64,26 @@ print(tabulate(dataFrameFailover, headers = 'keys', tablefmt = 'psql'))
 
 checkResults=[]
 nodeVersions=[]
+
+if not couchbaseEnvironment.xdcrConnections:
+    print("No XDCR Cluster Exists")
+else:
+    for xdcr in couchbaseEnvironment.xdcrConnections:
+        couchbaseEnvironmentXDCR=couchbase_meta.couchbasePlatform(xdcr.get('targetNode'),couchbaseUser,couchbaseSecret)
+        couchbaseEnvironmentXDCR.getClusterName()
+        couchbaseEnvironmentXDCR.getClusterVersion()
+        xdcrExampleRelease=couchbaseEnvironmentXDCR.clusterVersion
+        productionExampleRelease=couchbaseEnvironment.clusterVersion
+        if xdcrExampleRelease!=productionExampleRelease:
+            checkModel={
+            "problemStatement": 'XDCR and Production cluster versions are different',
+            "problemArea": f''' {xdcr.get('targetNode')} - XDCR''',
+            "problemSeverity": 'Critical'
+            }
+            checkResults.append(checkModel)
+        else:
+            print("Good")
+
 
 for node in clusterNodes:
     healtStatus=node.get('healtStatus')

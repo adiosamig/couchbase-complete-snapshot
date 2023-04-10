@@ -76,7 +76,7 @@ class couchbasePlatform:
             getNodeDetails = requests.get(
                 url=urlForHealth, auth=(self.logininformation, self.loginsecret))
             resultParsed = getNodeDetails.json()
-            print(resultParsed)
+            #print(resultParsed)
             self.rebalanceStatus=resultParsed
         except Exception as couchbaseBucketException:
             print(couchbaseBucketException)
@@ -91,7 +91,7 @@ class couchbasePlatform:
                 xdcrModel={
                     "xdcrName": remote.get('name'),
                     "xdcrConnectivity": remote.get('connectivityStatus'),
-                    "targetNode":remote.get('hostname')
+                    "targetNode":remote.get('hostname').split(":")[0]
                 }
                 xdcrConnections.append(xdcrModel)
             self.xdcrConnections=xdcrConnections
