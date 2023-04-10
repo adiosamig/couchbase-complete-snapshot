@@ -32,6 +32,7 @@ couchbaseEnvironment.getNodesOnCluster()
 couchbaseEnvironment.prepareBucketData()
 couchbaseEnvironment.getSettings()
 couchbaseEnvironment.getRebalance()
+exporterStatus=couchbaseEnvironment.checkExporters()
 
 clusterNodes=couchbaseEnvironment.clusterNodes
 clusterBuckets=couchbaseEnvironment.buckets
@@ -43,6 +44,8 @@ dataFrameforBuckets=pd.DataFrame(couchbaseEnvironment.buckets)
 dataFrameforRoles=pd.DataFrame(couchbaseEnvironment.usersOnCluster)
 dataFrameforXdcr=pd.DataFrame(couchbaseEnvironment.xdcrConnections)
 dataFrameFailover=pd.DataFrame(clusterSettings)
+
+# if xdcr exists then check version and compare with the existing cluster.
 
 
 print("----- Cluster Nodes -----")
@@ -61,6 +64,26 @@ print(tabulate(dataFrameFailover, headers = 'keys', tablefmt = 'psql'))
 
 checkResults=[]
 nodeVersions=[]
+
+if not couchbaseEnvironment.xdcrConnections:
+    print("No XDCR Cluster Exists")
+else:
+    for xdcr in couchbaseEnvironment.xdcrConnections:
+        couchbaseEnvironmentXDCR=couchbase_meta.couchbasePlatform(xdcr.get('targetNode'),couchbaseUser,couchbaseSecret)
+        couchbaseEnvironmentXDCR.getClusterName()
+        couchbaseEnvironmentXDCR.getClusterVersion()
+        xdcrExampleRelease=couchbaseEnvironmentXDCR.clusterVersion
+        productionExampleRelease=couchbaseEnvironment.clusterVersion
+        if xdcrExampleRelease!=productionExampleRelease:
+            checkModel={
+            "problemStatement": 'XDCR and Production cluster versions are different',
+            "problemArea": f''' {xdcr.get('targetNode')} - XDCR''',
+            "problemSeverity": 'Critical'
+            }
+            checkResults.append(checkModel)
+        else:
+            print("Good")
+
 
 for node in clusterNodes:
     healtStatus=node.get('healtStatus')
@@ -148,21 +171,31 @@ for setting in clusterSettings:
         }
         checkResults.append(checkModel)
 
+if exporterStatus!=True:
+        checkModel={
+            "problemStatement": 'Default node exporter port can not be reached.If node exporter port is different from default ignore this problem.',
+            "problemArea": 'Monitoring',
+            "problemSeverity": 'Medium'
+        }
+        checkResults.append(checkModel)
+
 dataFrameResults=pd.DataFrame(checkResults)
 print("----- Check Notes -----")
 print(tabulate(dataFrameResults, headers = 'keys', tablefmt = 'psql'))
 
+
+pingResult=debugPerformance.getPingResults(couchbaseServer,couchbaseUser,couchbaseSecret)
+results=json.loads(pingResult)
+pingResultPretty=results.get('services').get('mgmt')
+pingResults=[]
+for node in pingResultPretty:
+    pingModel={
+        "nodeIp": node.get('remote'),
+        "pingState": node.get('state'),
+        "latency(us)": node.get('latency_us')
+    }
+    pingResults.append(pingModel)
+
+pingFrame=pd.DataFrame(pingResults)
 print("----- Ping Test Results -----")
-debugPerformance.getPingResults(couchbaseServer,couchbaseUser,couchbaseSecret)
-
-print("----- Wait Cluster Test Results -----")
-logging.basicConfig(filename='example.log',
-                    filemode='w', 
-                    level=logging.DEBUG,
-                    format='%(levelname)s::%(asctime)s.%(msecs)03d::%(message)s',
-                    datefmt='%Y-%m-%d,%H:%M:%S')
-logger = logging.getLogger()
-
-debugPerformance.waitCluster(couchbaseServer,couchbaseUser,couchbaseSecret,logger)
-
-
+print(tabulate(pingFrame, headers = 'keys', tablefmt = 'psql'))

@@ -1,5 +1,6 @@
 import requests
-
+import telnetlib
+import sys
 
 class couchbasePlatform:
     def __init__(self,hostName,loginInformation,loginSecret):
@@ -75,7 +76,7 @@ class couchbasePlatform:
             getNodeDetails = requests.get(
                 url=urlForHealth, auth=(self.logininformation, self.loginsecret))
             resultParsed = getNodeDetails.json()
-            print(resultParsed)
+            #print(resultParsed)
             self.rebalanceStatus=resultParsed
         except Exception as couchbaseBucketException:
             print(couchbaseBucketException)
@@ -90,7 +91,7 @@ class couchbasePlatform:
                 xdcrModel={
                     "xdcrName": remote.get('name'),
                     "xdcrConnectivity": remote.get('connectivityStatus'),
-                    "targetNode":remote.get('hostname')
+                    "targetNode":remote.get('hostname').split(":")[0]
                 }
                 xdcrConnections.append(xdcrModel)
             self.xdcrConnections=xdcrConnections
@@ -197,3 +198,13 @@ class couchbasePlatform:
             self.settingsCluster=settingsArray
         except Exception as couchbaseBucketException:
             print(couchbaseBucketException)
+    def checkExporters(self):
+        nodeExporter=False
+        try:
+            conn = telnetlib.Telnet(self.hostname)
+            response = self.hostname+' ' + '9120' +' - Success'
+            nodeExporter=True
+        except:
+            response = self.hostname+' ' + '9120' +' - Failed'
+        finally:
+            return nodeExporter
