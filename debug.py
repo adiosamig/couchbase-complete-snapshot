@@ -19,14 +19,7 @@ def getPingResults(connectionIp,userName,userSecret):
     cluster = Cluster(f'''couchbase://{connectionIp}''', ClusterOptions(auth))
     cluster.wait_until_ready(timedelta(seconds=5))
     ping_result = cluster.ping()
-    for endpoint, reports in ping_result.endpoints.items():
-        for report in reports:
-            print(
-                "{0}: {1} took {2}".format(
-                    endpoint.value,
-                    report.remote,
-                    report.latency))
-    return ping_result
+    return ping_result.as_json()
 
 def waitCluster(connectionIp,userName,userSecret,logger):
     couchbase.configure_logging(logger.name, level=logger.level) 

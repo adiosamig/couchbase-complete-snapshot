@@ -32,6 +32,7 @@ couchbaseEnvironment.getNodesOnCluster()
 couchbaseEnvironment.prepareBucketData()
 couchbaseEnvironment.getSettings()
 couchbaseEnvironment.getRebalance()
+exporterStatus=couchbaseEnvironment.checkExporters()
 
 clusterNodes=couchbaseEnvironment.clusterNodes
 clusterBuckets=couchbaseEnvironment.buckets
@@ -148,21 +149,31 @@ for setting in clusterSettings:
         }
         checkResults.append(checkModel)
 
+if exporterStatus!=True:
+        checkModel={
+            "problemStatement": 'Default node exporter port can not be reached.If node exporter port is different from default ignore this problem.',
+            "problemArea": 'Monitoring',
+            "problemSeverity": 'Medium'
+        }
+        checkResults.append(checkModel)
+
 dataFrameResults=pd.DataFrame(checkResults)
 print("----- Check Notes -----")
 print(tabulate(dataFrameResults, headers = 'keys', tablefmt = 'psql'))
 
+
+pingResult=debugPerformance.getPingResults(couchbaseServer,couchbaseUser,couchbaseSecret)
+results=json.loads(pingResult)
+pingResultPretty=results.get('services').get('mgmt')
+pingResults=[]
+for node in pingResultPretty:
+    pingModel={
+        "nodeIp": node.get('remote'),
+        "pingState": node.get('state'),
+        "latency(us)": node.get('latency_us')
+    }
+    pingResults.append(pingModel)
+
+pingFrame=pd.DataFrame(pingResults)
 print("----- Ping Test Results -----")
-debugPerformance.getPingResults(couchbaseServer,couchbaseUser,couchbaseSecret)
-
-print("----- Wait Cluster Test Results -----")
-logging.basicConfig(filename='example.log',
-                    filemode='w', 
-                    level=logging.DEBUG,
-                    format='%(levelname)s::%(asctime)s.%(msecs)03d::%(message)s',
-                    datefmt='%Y-%m-%d,%H:%M:%S')
-logger = logging.getLogger()
-
-debugPerformance.waitCluster(couchbaseServer,couchbaseUser,couchbaseSecret,logger)
-
-
+print(tabulate(pingFrame, headers = 'keys', tablefmt = 'psql'))

@@ -1,5 +1,6 @@
 import requests
-
+import telnetlib
+import sys
 
 class couchbasePlatform:
     def __init__(self,hostName,loginInformation,loginSecret):
@@ -197,3 +198,13 @@ class couchbasePlatform:
             self.settingsCluster=settingsArray
         except Exception as couchbaseBucketException:
             print(couchbaseBucketException)
+    def checkExporters(self):
+        nodeExporter=False
+        try:
+            conn = telnetlib.Telnet(self.hostname)
+            response = self.hostname+' ' + '9120' +' - Success'
+            nodeExporter=True
+        except:
+            response = self.hostname+' ' + '9120' +' - Failed'
+        finally:
+            return nodeExporter
