@@ -30,6 +30,7 @@ couchbaseEnvironment.getUsersOnCluster()
 couchbaseEnvironment.getXdcrConnections()
 couchbaseEnvironment.getNodesOnCluster()
 couchbaseEnvironment.prepareBucketData()
+couchbaseEnvironment.prepareIndexData()
 couchbaseEnvironment.getSettings()
 couchbaseEnvironment.getRebalance()
 exporterStatus=couchbaseEnvironment.checkExporters()
@@ -38,13 +39,14 @@ clusterNodes=couchbaseEnvironment.clusterNodes
 clusterBuckets=couchbaseEnvironment.buckets
 clusterRoles=couchbaseEnvironment.usersOnCluster
 clusterSettings=couchbaseEnvironment.settingsCluster
+clusterIndex=couchbaseEnvironment.indexes
 
 dataFrameforNodes=pd.DataFrame(couchbaseEnvironment.clusterNodes)
 dataFrameforBuckets=pd.DataFrame(couchbaseEnvironment.buckets)
 dataFrameforRoles=pd.DataFrame(couchbaseEnvironment.usersOnCluster)
 dataFrameforXdcr=pd.DataFrame(couchbaseEnvironment.xdcrConnections)
 dataFrameFailover=pd.DataFrame(clusterSettings)
-
+dataFrameIndex=pd.DataFrame(clusterIndex)
 # if xdcr exists then check version and compare with the existing cluster.
 
 
@@ -52,6 +54,8 @@ print("----- Cluster Nodes -----")
 print(tabulate(dataFrameforNodes, headers = 'keys', tablefmt = 'psql'))
 print("----- Cluster Buckets -----")
 print(tabulate(dataFrameforBuckets, headers = 'keys', tablefmt = 'psql'))
+print("----- Cluster Index -----")
+print(tabulate(dataFrameIndex, headers = 'keys', tablefmt = 'psql'))
 print("----- Cluster XDCR -----")
 print(tabulate(dataFrameforXdcr, headers = 'keys', tablefmt = 'psql'))
 print("----- Cluster Roles -----")

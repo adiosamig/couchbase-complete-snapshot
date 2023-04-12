@@ -1,6 +1,8 @@
 import requests
 import telnetlib
 import sys
+from prettytable import PrettyTable
+import json
 
 class couchbasePlatform:
     def __init__(self,hostName,loginInformation,loginSecret):
@@ -137,32 +139,46 @@ class couchbasePlatform:
         except Exception as couchbaseBucketException:
             print(couchbaseBucketException)
     def prepareIndexData(self):
-        try:
-            indexEndpoint = f"http://{self.hostname}:9102/api/v1/stats?skipEmpty=true&redact=true&pretty=true"
-            getIndexDetails = requests.get(
-                url=indexEndpoint, auth=(self.logininformation, self.loginsecret))
-            overallIndexData = getIndexDetails.json()
-            indexList = []
-            for index in overallIndexData:
-                indexData=overallIndexData[index]
-                indexName=index
-                indexItemSize=indexData.get('avg_item_size')
-                indexItemCount=indexData.get('items_count')
-                indexHitPercent=indexData.get('cache_hit_percent')
-                indexResidentPercent=indexData.get('resident_percent')
-                indexIBuildPercent=indexData.get('initial_build_progress')
-                indexRecord={
-                    "indexName": indexName,
-                    "indexAverageItemSize": indexItemSize,
-                    "indexItemCount": indexItemCount,
-                    "indexHitPercent": indexHitPercent,
-                    "indexResidentPercent": indexResidentPercent,
-                    "indexBuildPercent": indexIBuildPercent
-                }
-                indexList.append(indexRecord)
-            self.indexes=indexList
-        except Exception as couchbaseBucketException:
-            print(couchbaseBucketException)
+        url = f''' http://{self.hostname}:8091/pools/default/nodeServices'''
+        response = requests.get(url, auth=(self.logininformation, self.loginsecret))
+        data = json.loads(response.content)
+        indexData=[]
+        # Check if the index service is enabled
+        index_service_enabled = False
+        for service in data.get('nodesExt'):
+            for key in service.get('services').keys():
+                if "index" in key:
+                    index_service_enabled = True
+                    break
+        if index_service_enabled:
+            # Set the endpoint URL for the indexes
+            url = "http://127.0.0.1:8091/indexStatus"
+
+            # Send the request and retrieve the response with authentication
+            response = requests.get(url, auth=(self.logininformation, self.loginsecret))
+            data = json.loads(response.content)
+            indexList=data.get('indexes')
+
+            # Print the indexes in table format
+            if len(indexList) > 0:
+                for index in indexList:
+                    indexStatus=index['status']
+                    indexDefinition=index['definition']
+                    indexReplica=index['numReplica']
+                    indexModel={
+                        "indexDefinition" : indexDefinition,
+                        "indexStatus": indexStatus,
+                        "indexReplica": indexReplica
+                    }
+                    indexData.append(indexModel)
+                self.indexes=indexData
+            else:
+                print('No indexes found.')
+                self.indexes=[]
+        else:
+            print('Index service is not enabled.')
+            self.indexes=[]
+        return True
     
 
     def getSettings(self):
